@@ -2,6 +2,8 @@ import lombok.Getter;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.file.Files;
 import java.util.*;
 
@@ -12,17 +14,16 @@ public class Huffman {
     private final Map<Character, Integer> char_frequencies = new HashMap<>();
     private final PriorityQueue<Node> queue = new PriorityQueue<>();
     private final byte[] fileBytes;
+    StringBuilder original_string_builder = new StringBuilder();
 
 
     public Huffman(File file, int bytes) throws IOException {
 
         fileBytes = Files.readAllBytes(file.toPath());
-        StringBuilder original_string = new StringBuilder();
 
         for (byte fileByte : fileBytes) {
-            original_string.append((char) fileByte);
+            original_string_builder.append((char) fileByte);
         }
-
         fill_char_frequencies_map();
         fill_queue();
         build_tree();
@@ -46,7 +47,7 @@ public class Huffman {
         }
     }
 
-    public void build_tree() {
+    private void build_tree() {
         while (queue.size() > 1) {
             Node left = queue.poll();
             Node right = queue.poll();
@@ -55,7 +56,7 @@ public class Huffman {
         }
     }
 
-    public void generate_codes(Node node, String code) {
+    private void generate_codes(Node node, String code) {
         if (node instanceof Leaf leaf) {
             huffman_codes.put(leaf.getCharacter(), code);
         } else {
@@ -71,4 +72,20 @@ public class Huffman {
         }
         return compressed_size / 8;
     }
+
+    public double get_compression_ratio() {
+        double ratio = ((double) get_compressed_size() / fileBytes.length * 100.0);
+        BigDecimal bd = new BigDecimal(Double.toString(ratio));
+        bd = bd.setScale(4, RoundingMode.HALF_UP);
+        return bd.doubleValue();
+    }
+
+    public String encode() {
+        StringBuilder encoded_string_builder = new StringBuilder();
+        for (byte fileByte : fileBytes) {
+            encoded_string_builder.append(huffman_codes.get((char) fileByte));
+        }
+        return encoded_string_builder.toString();
+    }
+
 }
