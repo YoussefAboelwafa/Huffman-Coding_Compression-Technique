@@ -3,11 +3,9 @@ import java.io.*;
 
 public class Solution {
     public void compress(File file, int bytes) throws IOException {
-        // TODO: compress function
         System.out.println("Original Size: \u001B[33m" + file.length() + " bytes\u001B[0m");
-        System.out.println("\u001B[32mCompressing file...\u001B[0m");
         try {
-            Huffman huffman = new Huffman(file);
+            Huffman huffman = new Huffman(file, bytes);
         } catch (IOException e) {
             System.out.println("\u001B[31mError reading file\u001B[0m");
             throw e;
