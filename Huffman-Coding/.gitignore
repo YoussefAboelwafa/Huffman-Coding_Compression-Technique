@@ -29,3 +29,8 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+# files
+/lecture.pdf
+/gbbct10.seq
+/original.txt
