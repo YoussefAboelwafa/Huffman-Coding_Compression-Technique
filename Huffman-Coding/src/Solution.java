@@ -4,10 +4,10 @@ import java.io.*;
 public class Solution {
     public void compress(File file, int bytes) throws IOException {
         // TODO: compress function
-        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-            }
+        System.out.println("Original Size: \u001B[33m" + file.length() + " bytes\u001B[0m");
+        System.out.println("\u001B[32mCompressing file...\u001B[0m");
+        try {
+            Huffman huffman = new Huffman(file);
         } catch (IOException e) {
             System.out.println("\u001B[31mError reading file\u001B[0m");
             throw e;
@@ -46,9 +46,7 @@ public class Solution {
                 bytes = Integer.parseInt(args[2]);
             }
 
-            System.out.println("Method: \u001B[33m" + method + "\u001B[0m");
-            System.out.println("File path: \u001B[33m" + filePath + "\u001B[0m");
-            System.out.println("Bytes: \u001B[33m" + bytes + "\u001B[0m");
+            System.out.println("File Path: \u001B[33m" + filePath + "\u001B[0m");
 
         } else {
             System.out.println("\u001B[31mPlease provide a correct arguments format\u001B[0m");
@@ -58,7 +56,6 @@ public class Solution {
         File file = new File(filePath);
 
         if (method == 'c') {
-            System.out.println("Original File size: \u001B[33m" + file.length() + " bytes\u001B[0m");
             try {
                 solution.compress(file, bytes);
             } catch (IOException e) {
