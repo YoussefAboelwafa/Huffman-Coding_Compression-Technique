@@ -9,15 +9,19 @@ import java.util.*;
 public class Huffman {
     @Getter
     private Map<Character, String> huffman_codes = new HashMap<>();
-    private Map<Character, Integer> char_frequencies = new HashMap<>();
-    private PriorityQueue<Node> queue = new PriorityQueue<>();
-    private byte[] fileBytes;
+    private final Map<Character, Integer> char_frequencies = new HashMap<>();
+    private final PriorityQueue<Node> queue = new PriorityQueue<>();
+    private final byte[] fileBytes;
 
 
     public Huffman(File file, int bytes) throws IOException {
 
         fileBytes = Files.readAllBytes(file.toPath());
-        System.out.println("Number of file bytes: \u001B[33m" + fileBytes.length + " bytes\u001B[0m");
+        StringBuilder original_string = new StringBuilder();
+
+        for (byte fileByte : fileBytes) {
+            original_string.append((char) fileByte);
+        }
 
         fill_char_frequencies_map();
         fill_queue();
@@ -58,5 +62,13 @@ public class Huffman {
             generate_codes(node.getLeftNode(), code + "0");
             generate_codes(node.getRightNode(), code + "1");
         }
+    }
+
+    public long get_compressed_size() {
+        long compressed_size = 0;
+        for (byte fileByte : fileBytes) {
+            compressed_size += huffman_codes.get((char) fileByte).length();
+        }
+        return compressed_size / 8;
     }
 }
