@@ -1,10 +1,13 @@
 import lombok.Getter;
+import lombok.Setter;
 
 @Getter
+@Setter
 public class Node implements Comparable<Node> {
     private final int frequency;
     private Node leftNode;
     private Node rightNode;
+    private Leaf leaf;
 
     public Node(Node leftNode, Node rightNode) {
         this.leftNode = leftNode;
