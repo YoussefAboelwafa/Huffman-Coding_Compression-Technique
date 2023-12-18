@@ -1,48 +1,52 @@
 import lombok.Getter;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.nio.file.Files;
+import java.nio.ByteBuffer;
 import java.util.*;
 
 
 public class Huffman {
     @Getter
-    private Map<Character, String> huffman_codes = new HashMap<>();
-    private final Map<Character, Integer> char_frequencies = new HashMap<>();
+    private Map<String, String> huffman_codes = new HashMap<>();
+    private final Map<String, Integer> frequencies = new HashMap<>();
     private final PriorityQueue<Node> queue = new PriorityQueue<>();
-    private final byte[] fileBytes;
-    StringBuilder original_string_builder = new StringBuilder();
+    private final int bytes;
 
-
-    public Huffman(File file, int bytes) throws IOException {
-
-        fileBytes = Files.readAllBytes(file.toPath());
-
-        for (byte fileByte : fileBytes) {
-            original_string_builder.append((char) fileByte);
-        }
-        fill_char_frequencies_map();
-        fill_queue();
-        build_tree();
-        generate_codes(queue.peek(), "");
-    }
-
-    private void fill_char_frequencies_map() {
-        for (byte fileByte : fileBytes) {
-            char character = (char) fileByte;
-            if (char_frequencies.containsKey(character)) {
-                char_frequencies.put(character, char_frequencies.get(character) + 1);
-            } else {
-                char_frequencies.put(character, 1);
+    public Huffman(File file, int bytes, int chunk_size) throws IOException {
+        this.bytes = bytes;
+        try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file))) {
+            byte[] chunk = new byte[chunk_size];
+            int bytes_read;
+            while ((bytes_read = bis.read(chunk)) != -1) {
+                process_chunk(chunk, bytes_read);
             }
         }
     }
 
+    private void process_chunk(byte[] chunk, int bytesRead) {
+        ByteBuffer wrapped = ByteBuffer.wrap(chunk);
+        for (int i = 0; i < bytesRead; i += bytes) {
+            byte[] byte_arr = new byte[bytes];
+            wrapped.get(byte_arr, 0, bytes);
+            String key = new String(byte_arr);
+            frequencies.put(key, frequencies.getOrDefault(key, 0) + 1);
+        }
+        fill_queue();
+        build_tree();
+        generate_codes(queue.peek(), "");
+
+        System.out.println("Huffman Codes:");
+        for (Map.Entry<String, String> entry : huffman_codes.entrySet()) {
+            System.out.println(entry.getKey() + " => " + entry.getValue());
+        }
+
+    }
+
     private void fill_queue() {
-        for (Map.Entry<Character, Integer> entry : char_frequencies.entrySet()) {
+        for (Map.Entry<String, Integer> entry : frequencies.entrySet()) {
             queue.add(new Leaf(entry.getKey(), entry.getValue()));
         }
     }
@@ -58,7 +62,7 @@ public class Huffman {
 
     private void generate_codes(Node node, String code) {
         if (node instanceof Leaf leaf) {
-            huffman_codes.put(leaf.getCharacter(), code);
+            huffman_codes.put(leaf.getString(), code);
         } else {
             generate_codes(node.getLeftNode(), code + "0");
             generate_codes(node.getRightNode(), code + "1");
@@ -66,26 +70,15 @@ public class Huffman {
     }
 
     public long get_compressed_size() {
-        long compressed_size = 0;
-        for (byte fileByte : fileBytes) {
-            compressed_size += huffman_codes.get((char) fileByte).length();
-        }
-        return compressed_size / 8;
+        return 0;
     }
 
     public double get_compression_ratio() {
-        double ratio = ((double) get_compressed_size() / fileBytes.length * 100.0);
-        BigDecimal bd = new BigDecimal(Double.toString(ratio));
-        bd = bd.setScale(4, RoundingMode.HALF_UP);
-        return bd.doubleValue();
+        return 0;
     }
 
     public String encode() {
-        StringBuilder encoded_string_builder = new StringBuilder();
-        for (byte fileByte : fileBytes) {
-            encoded_string_builder.append(huffman_codes.get((char) fileByte));
-        }
-        return encoded_string_builder.toString();
+        return null;
     }
 
 }

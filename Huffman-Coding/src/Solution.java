@@ -2,10 +2,10 @@ import java.io.*;
 
 
 public class Solution {
-    public void compress(File file, int bytes) throws IOException {
+    public void compress(File file, int bytes, int chunk_size) throws IOException {
         System.out.println("Original Size: \u001B[33m" + file.length() + " \u001B[0mbytes");
         try {
-            Huffman huffman = new Huffman(file, bytes);
+            Huffman huffman = new Huffman(file, bytes, chunk_size);
             System.out.println("Compressed Size: \u001B[32m" + huffman.get_compressed_size() + " \u001B[0mbytes");
             System.out.println("Compression Ratio: \u001B[34m" + huffman.get_compression_ratio() + "\u001B[0m");
         } catch (IOException e) {
@@ -23,7 +23,7 @@ public class Solution {
 
         char method = 0;
         String filePath = null;
-        int bytes = 1;
+        int bytes = 2;
 
         if (args.length > 0 && args.length < 4) {
             method = args[0].charAt(0);
@@ -43,7 +43,7 @@ public class Solution {
                 System.out.println("\u001B[31mPlease provide n bytes\u001B[0m");
                 return;
             } else if (method == 'c') {
-                bytes = Integer.parseInt(args[2]);
+//                bytes = Integer.parseInt(args[2]);
             }
 
             System.out.println("File Path: \u001B[33m" + filePath + "\u001B[0m");
@@ -57,7 +57,9 @@ public class Solution {
 
         if (method == 'c') {
             try {
-                solution.compress(file, bytes);
+                long maxMemory = Runtime.getRuntime().maxMemory();
+                int chunk_size = (int) (maxMemory / (4 * bytes));
+                solution.compress(file, bytes, chunk_size);
             } catch (IOException e) {
                 System.out.println("\u001B[31mError compressing file\u001B[0m");
             }

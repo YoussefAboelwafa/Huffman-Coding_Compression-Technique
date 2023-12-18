@@ -2,12 +2,12 @@ import lombok.Getter;
 
 @Getter
 public class Leaf extends Node {
-    private final char character;
+    private final String string;
     private final int frequency;
 
-    public Leaf(char character, int frequency) {
+    public Leaf(String string, int frequency) {
         super(null, null);
-        this.character = character;
+        this.string = string;
         this.frequency = frequency;
     }
 }
