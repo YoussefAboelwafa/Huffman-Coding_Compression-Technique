@@ -1,12 +1,12 @@
 /*
-* Name: Youssef Hossam ElDin Moustafa AboElWafa
-* ID: 20012263
-*
-* “I acknowledge that I am aware of the academic integrity guidelines of this
-* course, and that I worked on this assignment independently without any
-* unauthorized help”
-*
-*/
+ * Name: Youssef Hossam ElDin Moustafa AboElWafa
+ * ID: 20012263
+ *
+ * “I acknowledge that I am aware of the academic integrity guidelines of this
+ * course, and that I worked on this assignment independently without any
+ * unauthorized help”
+ *
+ */
 
 import java.io.*;
 
@@ -75,10 +75,12 @@ public class Solution {
             compression.compress(file, bytes);
             long end = System.currentTimeMillis();
 
+            System.out.println("Number of Bytes: \u001B[36m" + bytes + " \u001B[0mbytes");
             System.out.println("Compression Time: \u001B[35m" + (end - start) / 1000 + " \u001B[0ms");
             System.out.println("Original Size: \u001B[33m" + file.length() + " \u001B[0mbytes");
             System.out.println("Compressed Size: \u001B[32m" + compression.get_compressed_size() + " \u001B[0mbytes");
-            System.out.println("Compression Ratio: \u001B[36m" + compression.get_compression_ratio() + " \u001B[0m");
+            System.out.println("Compression Ratio: \u001B[36m" + Math.round(compression.get_compression_ratio()) + " \u001B[0m%");
+            System.out.println("====================================================================");
 
         } catch (IOException e) {
             System.out.println("\u001B[31mError reading file\u001B[0m");
