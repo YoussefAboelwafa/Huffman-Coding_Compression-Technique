@@ -1,3 +1,8 @@
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
 public class Node {
     private long frequency;
     private String code = "";
@@ -14,8 +19,8 @@ public class Node {
         this.right = right;
     }
 
-    public Node(Wrapper val, long frequency) {
-        this.value = val;
+    public Node(Wrapper value, long frequency) {
+        this.value = value;
         this.frequency = frequency;
     }
 
@@ -23,17 +28,5 @@ public class Node {
         this.frequency = frequency;
         this.left = left;
         this.right = right;
-    }
-
-    public void setCode(String code) {
-        this.code = code;
-    }
-
-    public String getCode() {
-        return this.code;
-    }
-
-    public long getFrequency() {
-        return this.frequency;
     }
 }
