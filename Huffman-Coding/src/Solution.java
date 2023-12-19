@@ -70,7 +70,6 @@ public class Solution {
             System.out.println("Compressed Size: \u001B[32m" + compression.get_compressed_size() + " \u001B[0mbytes");
             System.out.println("Compression Ratio: \u001B[36m" + compression.get_compression_ratio() + " \u001B[0m");
 
-
         } catch (IOException e) {
             System.out.println("\u001B[31mError reading file\u001B[0m");
             throw e;
