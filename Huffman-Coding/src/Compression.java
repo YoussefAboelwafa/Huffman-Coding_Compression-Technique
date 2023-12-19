@@ -1,5 +1,6 @@
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.PriorityQueue;
 import java.util.Stack;
@@ -15,23 +16,17 @@ public class Compression {
 
         HashMap<Wrapper, Long> frequencies = read_bytes(file, n);
 
-        PriorityQueue<Node> queue = new PriorityQueue<>(frequencies.size(), (Node a, Node b) -> {
-            if (a.getFrequency() == b.getFrequency())
-                return 0;
-            else if (a.getFrequency() > b.getFrequency())
-                return 1;
-            else
-                return -1;
-        });
+        PriorityQueue<Node> queue = new PriorityQueue<>(frequencies.size(), Comparator.comparingLong(Node::getFrequency));
 
         build_tree(frequencies, queue);
         HashMap<Wrapper, String> huffman_codes = new HashMap<>();
 
         Node root = queue.peek();
+        assert root != null;
         if (root.left == null && root.right == null) {
             huffman_codes.put(root.value, "0");
         } else {
-            construct_code_words(huffman_codes, root, "");
+            fill_huffman_codes(huffman_codes, root, "");
         }
         compress_file(file, huffman_codes, make_dictionary(root, n), n);
     }
@@ -47,9 +42,9 @@ public class Compression {
             if (bytes_read < n) {
                 byte[] temp = new byte[bytes_read];
                 System.arraycopy(data, 0, temp, 0, bytes_read);
-                calculate_frequency(temp, frequencies);
+                add_frequency(temp, frequencies);
             } else {
-                calculate_frequency(data, frequencies);
+                add_frequency(data, frequencies);
             }
             data = new byte[n];
         }
@@ -57,7 +52,7 @@ public class Compression {
         return frequencies;
     }
 
-    private void calculate_frequency(byte[] bytes, HashMap<Wrapper, Long> frequencies) {
+    private void add_frequency(byte[] bytes, HashMap<Wrapper, Long> frequencies) {
         Wrapper temp = new Wrapper(bytes.clone());
         if (frequencies.containsKey(temp)) frequencies.put(temp, frequencies.get(temp) + 1);
         else frequencies.put(temp, (long) 1);
@@ -67,10 +62,6 @@ public class Compression {
         for (Wrapper key : frequencies.keySet()) {
             queue.add(new Node(key, frequencies.get(key)));
         }
-        construct_tree(queue);
-    }
-
-    private void construct_tree(PriorityQueue<Node> queue) {
         int i = queue.size();
         while (i > 1) {
             Node first = queue.poll();
@@ -86,15 +77,15 @@ public class Compression {
         }
     }
 
-    private void construct_code_words(HashMap<Wrapper, String> huffman_codes, Node root, String s) {
+    private void fill_huffman_codes(HashMap<Wrapper, String> huffman_codes, Node root, String s) {
         s = s + root.getCode();
         if (root.left == null && root.right == null) {
             huffman_codes.put(root.value, s);
             root.setCode(s);
-            return;
         } else {
-            construct_code_words(huffman_codes, root.left, s);
-            construct_code_words(huffman_codes, root.right, s);
+            assert root.left != null;
+            fill_huffman_codes(huffman_codes, root.left, s);
+            fill_huffman_codes(huffman_codes, root.right, s);
         }
     }
 
@@ -109,41 +100,39 @@ public class Compression {
         this.compressed_size = new File(compressed_file).length();
     }
 
-    public long getCompressed_size() {
+    public long get_compressed_size() {
         return this.compressed_size;
     }
 
-    public double getCompression_ratio() {
+    public double get_compression_ratio() {
         return ((double) this.compressed_size / this.original_size) * 100;
     }
 
     private byte[] make_dictionary(Node root, int n) {
         Stack<Node> stk = new Stack<>();
         stk.push(root);
-        StringBuilder dictionary = new StringBuilder();
+        StringBuilder builder = new StringBuilder();
 
         while (!stk.isEmpty()) {
             Node temp = stk.pop();
             if (temp.left == null && temp.right == null) {
-                dictionary.append("1");
+                builder.append("1");
                 number_ones++;
                 if (temp.value.data.length < n) {
                     this.index = number_ones;
                     this.size = temp.value.data.length;
                 }
-                dictionary.append(new String(temp.value.data, StandardCharsets.ISO_8859_1));
-            } else dictionary.append("0");
+                builder.append(new String(temp.value.data, StandardCharsets.ISO_8859_1));
+            } else builder.append("0");
             if (temp.right == null && temp.left != null) stk.push(temp.left);
             else if (temp.left == null && temp.right != null) stk.push(temp.right);
-            else if (temp.left != null && temp.right != null) {
+            else if (temp.left != null) {
                 stk.push(temp.right);
                 stk.push(temp.left);
             }
         }
-        StringBuilder sb = new StringBuilder();
-        sb.append(String.valueOf(n)).append(",").append(this.index).append(",").append(this.size);
-        sb.append(",").append(sb.length()).append(",").append(sb);
-        return sb.toString().getBytes(StandardCharsets.ISO_8859_1);
+        String sb = n + "," + this.index + "," + this.size + "," + builder.length() + "," + builder;
+        return sb.getBytes(StandardCharsets.ISO_8859_1);
     }
 
     private void write_file(File file, BufferedOutputStream bos, int n, HashMap<Wrapper, String> huffman_codes) throws IOException {
