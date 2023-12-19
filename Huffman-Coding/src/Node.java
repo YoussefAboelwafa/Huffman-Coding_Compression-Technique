@@ -1,23 +1,39 @@
-import lombok.Getter;
-import lombok.Setter;
+public class Node {
+    private long frequency;
+    private String code = "";
+    BAW value;
+    Node left;
+    Node right;
 
-@Getter
-@Setter
-public class Node implements Comparable<Node> {
-    private final int frequency;
-    private Node leftNode;
-    private Node rightNode;
-    private Leaf leaf;
-
-    public Node(Node leftNode, Node rightNode) {
-        this.leftNode = leftNode;
-        this.rightNode = rightNode;
-        this.frequency = (leftNode != null ? leftNode.getFrequency() : 0)
-                + (rightNode != null ? rightNode.getFrequency() : 0);
+    public Node() {
     }
 
-    @Override
-    public int compareTo(Node node) {
-        return Integer.compare(frequency, node.getFrequency());
+    public Node(BAW value, Node left, Node right) {
+        this.value = value;
+        this.left = left;
+        this.right = right;
+    }
+
+    public Node(BAW val, long frequency) {
+        this.value = val;
+        this.frequency = frequency;
+    }
+
+    public Node(long frequency, Node left, Node right) {
+        this.frequency = frequency;
+        this.left = left;
+        this.right = right;
+    }
+
+    public void setCode(String code) {
+        this.code = code;
+    }
+
+    public String getCode() {
+        return this.code;
+    }
+
+    public long getFrequency() {
+        return this.frequency;
     }
 }
