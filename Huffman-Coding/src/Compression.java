@@ -7,8 +7,8 @@ import java.util.Stack;
 
 public class Compression {
     private int index;
-    private int number_ones = 0;
     private int size;
+    private int number_ones = 0;
     private long original_size = 0;
     private long compressed_size = 0;
 
