@@ -11,33 +11,35 @@ public class Compression {
     private int number_ones = 0;
     private long original_size = 0;
     private long compressed_size = 0;
+    HashMap<Wrapper, Long> frequencies = new HashMap<>();
+    HashMap<Wrapper, String> huffman_codes = new HashMap<>();
+    PriorityQueue<Node> queue;
 
     // Main method for compressing a file
     public void compress(File file, int n) throws IOException {
 
         // Read bytes from file and calculate frequencies
-        HashMap<Wrapper, Long> frequencies = read_bytes(file, n);
+        this.frequencies = build_frequencies(file, n);
 
         // Build Huffman tree
-        PriorityQueue<Node> queue = new PriorityQueue<>(frequencies.size(), Comparator.comparingLong(Node::getFrequency));
+        this.queue = new PriorityQueue<>(frequencies.size(), Comparator.comparingLong(Node::getFrequency));
         build_tree(frequencies, queue);
 
         // Build Huffman codes
-        HashMap<Wrapper, String> huffman_codes = new HashMap<>();
         Node root = queue.peek();
         assert root != null;
         if (root.left == null && root.right == null) {
-            huffman_codes.put(root.value, "0");
+            this.huffman_codes.put(root.value, "0");
         } else {
-            fill_huffman_codes(huffman_codes, root, "");
+            build_huffman_codes(this.huffman_codes, root, "");
         }
 
         // Compress file using Huffman codes
-        compress_file(file, huffman_codes, make_dictionary(root, n), n);
+        compress_file(file, this.huffman_codes, make_dictionary(root, n), n);
     }
 
     // Read bytes from file and calculate frequencies
-    private HashMap<Wrapper, Long> read_bytes(File file, int n) throws IOException {
+    private HashMap<Wrapper, Long> build_frequencies(File file, int n) throws IOException {
         FileInputStream fis = new FileInputStream(file);
         BufferedInputStream bis = new BufferedInputStream(fis, 32000);
         HashMap<Wrapper, Long> frequencies = new HashMap<>();
@@ -45,24 +47,24 @@ public class Compression {
         int bytes_read;
 
         while ((bytes_read = bis.read(data)) != -1) {
+            byte[] temp;
             if (bytes_read < n) {
-                byte[] temp = new byte[bytes_read];
+                temp = new byte[bytes_read];
                 System.arraycopy(data, 0, temp, 0, bytes_read);
-                add_frequency(temp, frequencies);
             } else {
-                add_frequency(data, frequencies);
+                temp = data.clone();
+            }
+            // Add frequency of a byte array to frequencies HashMap
+            Wrapper wrapper = new Wrapper(temp);
+            if (frequencies.containsKey(wrapper)) {
+                frequencies.put(wrapper, frequencies.get(wrapper) + 1);
+            } else {
+                frequencies.put(wrapper, (long) 1);
             }
             data = new byte[n];
         }
         bis.close();
         return frequencies;
-    }
-
-    // Add frequency of a byte array to frequencies HashMap
-    private void add_frequency(byte[] bytes, HashMap<Wrapper, Long> frequencies) {
-        Wrapper temp = new Wrapper(bytes.clone());
-        if (frequencies.containsKey(temp)) frequencies.put(temp, frequencies.get(temp) + 1);
-        else frequencies.put(temp, (long) 1);
     }
 
     // Build Huffman tree
@@ -86,15 +88,15 @@ public class Compression {
     }
 
     // Fill Huffman codes
-    private void fill_huffman_codes(HashMap<Wrapper, String> huffman_codes, Node root, String s) {
+    private void build_huffman_codes(HashMap<Wrapper, String> huffman_codes, Node root, String s) {
         s = s + root.getCode();
         if (root.left == null && root.right == null) {
             huffman_codes.put(root.value, s);
             root.setCode(s);
         } else {
             assert root.left != null;
-            fill_huffman_codes(huffman_codes, root.left, s);
-            fill_huffman_codes(huffman_codes, root.right, s);
+            build_huffman_codes(huffman_codes, root.left, s);
+            build_huffman_codes(huffman_codes, root.right, s);
         }
     }
 
@@ -120,7 +122,7 @@ public class Compression {
         return ((double) this.compressed_size / this.original_size) * 100;
     }
 
-
+    // Make dictionary
     private byte[] make_dictionary(Node root, int n) {
         Stack<Node> stk = new Stack<>();
         stk.push(root);
