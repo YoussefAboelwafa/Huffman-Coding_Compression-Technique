@@ -40,30 +40,21 @@ public class Compression {
 
     // Read bytes from file and calculate frequencies
     private HashMap<Wrapper, Long> build_frequencies(File file, int n) throws IOException {
-        FileInputStream fis = new FileInputStream(file);
-        BufferedInputStream bis = new BufferedInputStream(fis, 32000);
         HashMap<Wrapper, Long> frequencies = new HashMap<>();
-        byte[] data = new byte[n];
-        int bytes_read;
+        byte[] data = new byte[n * 1024];
 
-        while ((bytes_read = bis.read(data)) != -1) {
-            byte[] temp;
-            if (bytes_read < n) {
-                temp = new byte[bytes_read];
-                System.arraycopy(data, 0, temp, 0, bytes_read);
-            } else {
-                temp = data.clone();
+        try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file), 1024 * 1024 * 10)) {
+            int bytes_read;
+            while ((bytes_read = bis.read(data)) != -1) {
+                for (int i = 0; i < bytes_read; i += n) {
+                    int length = Math.min(n, bytes_read - i);
+                    byte[] temp = new byte[length];
+                    System.arraycopy(data, i, temp, 0, length);
+                    Wrapper wrapper = new Wrapper(temp);
+                    frequencies.put(wrapper, frequencies.getOrDefault(wrapper, 0L) + 1);
+                }
             }
-            // Add frequency of a byte array to frequencies HashMap
-            Wrapper wrapper = new Wrapper(temp);
-            if (frequencies.containsKey(wrapper)) {
-                frequencies.put(wrapper, frequencies.get(wrapper) + 1);
-            } else {
-                frequencies.put(wrapper, (long) 1);
-            }
-            data = new byte[n];
         }
-        bis.close();
         return frequencies;
     }
 
@@ -72,31 +63,42 @@ public class Compression {
         for (Wrapper key : frequencies.keySet()) {
             queue.add(new Node(key, frequencies.get(key)));
         }
-        int i = queue.size();
-        while (i > 1) {
+
+        while (queue.size() > 1) {
             Node first = queue.poll();
             Node second = queue.poll();
+
             assert first != null;
             assert second != null;
+
             long frequencies_sum = first.getFrequency() + second.getFrequency();
             first.setCode("0");
             second.setCode("1");
+
             Node current = new Node(frequencies_sum, first, second);
             queue.add(current);
-            i--;
         }
     }
 
     // Fill Huffman codes
     private void build_huffman_codes(HashMap<Wrapper, String> huffman_codes, Node root, String s) {
-        s = s + root.getCode();
-        if (root.left == null && root.right == null) {
-            huffman_codes.put(root.value, s);
-            root.setCode(s);
-        } else {
-            assert root.left != null;
-            build_huffman_codes(huffman_codes, root.left, s);
-            build_huffman_codes(huffman_codes, root.right, s);
+        Stack<Node> stack = new Stack<>();
+        stack.push(root);
+
+        while (!stack.isEmpty()) {
+            Node node = stack.pop();
+            if (node.left == null && node.right == null) {
+                huffman_codes.put(node.value, node.getCode());
+            } else {
+                if (node.right != null) {
+                    node.right.setCode(node.getCode() + "1");
+                    stack.push(node.right);
+                }
+                if (node.left != null) {
+                    node.left.setCode(node.getCode() + "0");
+                    stack.push(node.left);
+                }
+            }
         }
     }
 
@@ -152,40 +154,40 @@ public class Compression {
 
     // Write compressed file
     private void write_file(File file, BufferedOutputStream bos, int n, HashMap<Wrapper, String> huffman_codes) throws IOException {
-        FileInputStream fis = new FileInputStream(file);
-        BufferedInputStream bis = new BufferedInputStream(fis, 32000);
-        byte[] data = new byte[n];
-        int bytes_read;
         StringBuilder sb = new StringBuilder();
         Wrapper wrapper;
-        while ((bytes_read = bis.read(data)) != -1) {
-            if (bytes_read < n) {
-                byte[] temp = new byte[bytes_read];
-                System.arraycopy(data, 0, temp, 0, bytes_read);
-                wrapper = new Wrapper(temp.clone());
-            } else {
-                wrapper = new Wrapper(data.clone());
-            }
-            sb.append(huffman_codes.get(wrapper));
-            while (sb.length() >= 8) {
-                String written_string = sb.substring(0, 8);
-                bos.write(((Integer) Integer.parseInt(written_string, 2)).byteValue());
-                sb.delete(0, 8);
-            }
-            data = new byte[n];
-        }
 
-        int count_zeros = 0;
-        if (!sb.isEmpty()) {
-            for (int i = sb.length(); i < 8; i++) {
-                sb.append("0");
-                count_zeros++;
+        try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file), 1024 * 1024 * 2)) {
+            byte[] data = new byte[n];
+            int bytes_read;
+
+            while ((bytes_read = bis.read(data)) != -1) {
+                if (bytes_read < n) {
+                    byte[] temp = new byte[bytes_read];
+                    System.arraycopy(data, 0, temp, 0, bytes_read);
+                    wrapper = new Wrapper(temp.clone());
+                } else {
+                    wrapper = new Wrapper(data.clone());
+                }
+                sb.append(huffman_codes.get(wrapper));
+                while (sb.length() >= 8) {
+                    String written_string = sb.substring(0, 8);
+                    bos.write(((Integer) Integer.parseInt(written_string, 2)).byteValue());
+                    sb.delete(0, 8);
+                }
+                data = new byte[n];
             }
-            bos.write(((Integer) Integer.parseInt(sb.toString(), 2)).byteValue());
+
+            int count_zeros = 0;
+            if (!sb.isEmpty()) {
+                for (int i = sb.length(); i < 8; i++) {
+                    sb.append("0");
+                    count_zeros++;
+                }
+                bos.write(((Integer) Integer.parseInt(sb.toString(), 2)).byteValue());
+            }
+            bos.write(((byte) count_zeros));
         }
-        bos.write(((byte) count_zeros));
-        bos.close();
-        bis.close();
     }
 
 }
