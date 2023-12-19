@@ -1,6 +1,5 @@
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.PriorityQueue;
 import java.util.Stack;
@@ -16,14 +15,21 @@ public class Compression {
 
         HashMap<Wrapper, Long> frequencies = read_bytes(file, n);
 
-        PriorityQueue<Node> queue = new PriorityQueue<>(frequencies.size(), Comparator.comparingLong(Node::getFrequency));
+        PriorityQueue<Node> queue = new PriorityQueue<>(frequencies.size(), (Node a, Node b) -> {
+            if (a.getFrequency() == b.getFrequency())
+                return 0;
+            else if (a.getFrequency() > b.getFrequency())
+                return 1;
+            else
+                return -1;
+        });
 
         build_tree(frequencies, queue);
         HashMap<Wrapper, String> huffman_codes = new HashMap<>();
 
         Node root = queue.peek();
-        if ((root != null ? root.left : null) == null && (root != null ? root.right : null) == null) {
-            huffman_codes.put(root != null ? root.value : null, "0");
+        if (root.left == null && root.right == null) {
+            huffman_codes.put(root.value, "0");
         } else {
             construct_code_words(huffman_codes, root, "");
         }
@@ -85,8 +91,8 @@ public class Compression {
         if (root.left == null && root.right == null) {
             huffman_codes.put(root.value, s);
             root.setCode(s);
+            return;
         } else {
-            assert root.left != null;
             construct_code_words(huffman_codes, root.left, s);
             construct_code_words(huffman_codes, root.right, s);
         }
@@ -129,13 +135,13 @@ public class Compression {
             } else dictionary.append("0");
             if (temp.right == null && temp.left != null) stk.push(temp.left);
             else if (temp.left == null && temp.right != null) stk.push(temp.right);
-            else if (temp.left != null) {
+            else if (temp.left != null && temp.right != null) {
                 stk.push(temp.right);
                 stk.push(temp.left);
             }
         }
         StringBuilder sb = new StringBuilder();
-        sb.append(n).append(",").append(this.index).append(",").append(this.size);
+        sb.append(String.valueOf(n)).append(",").append(this.index).append(",").append(this.size);
         sb.append(",").append(sb.length()).append(",").append(sb);
         return sb.toString().getBytes(StandardCharsets.ISO_8859_1);
     }
