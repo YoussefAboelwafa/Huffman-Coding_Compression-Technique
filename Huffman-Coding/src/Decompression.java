@@ -8,7 +8,7 @@ public class Decompression {
     Node temp_root;
     Node root;
 
-    public void read_from_compressed_file(File file) throws IOException {
+    public void decompress(File file) throws IOException {
         FileInputStream fis = new FileInputStream(file);
         BufferedInputStream bis = new BufferedInputStream(fis);
 
@@ -64,6 +64,26 @@ public class Decompression {
         this.temp_root = this.root;
 
         decompress_body(bis, n, file);
+    }
+
+    private Node reconstruct_tree(StringBuilder dictionary, int n, int index, int size) {
+        if (dictionary.charAt(dictionary_index) == '1') {
+            number_ones++;
+            byte[] bytes;
+            if (number_ones == index) {
+                bytes = dictionary.substring(dictionary_index + 1, dictionary_index + size + 1).getBytes(StandardCharsets.ISO_8859_1);
+                dictionary_index += (size + 1);
+            } else {
+                bytes = dictionary.substring(dictionary_index + 1, dictionary_index + n + 1).getBytes(StandardCharsets.ISO_8859_1);
+                dictionary_index += (n + 1);
+            }
+            return new Node(new Wrapper(bytes.clone()), null, null);
+        } else {
+            dictionary_index++;
+            Node left_child = reconstruct_tree(dictionary, n, index, size);
+            Node right_child = reconstruct_tree(dictionary, n, index, size);
+            return new Node(null, left_child, right_child);
+        }
     }
 
     public void decompress_body(BufferedInputStream bis, int n, File file) throws IOException {
@@ -130,29 +150,5 @@ public class Decompression {
             }
         }
 
-    }
-
-    private Node reconstruct_tree(StringBuilder dictionary, int n, int index, int size) {
-        if (dictionary.charAt(dictionary_index) == '1') {
-            number_ones++;
-            byte[] bytes;
-            if (number_ones == index) {
-                bytes = dictionary.substring(dictionary_index + 1, dictionary_index + size + 1).getBytes(StandardCharsets.ISO_8859_1);
-                dictionary_index += (size + 1);
-            } else {
-                bytes = dictionary.substring(dictionary_index + 1, dictionary_index + n + 1).getBytes(StandardCharsets.ISO_8859_1);
-                dictionary_index += (n + 1);
-            }
-            return new Node(new Wrapper(bytes.clone()), null, null);
-        } else {
-            dictionary_index++;
-            Node left_child = reconstruct_tree(dictionary, n, index, size);
-            Node right_child = reconstruct_tree(dictionary, n, index, size);
-            return new Node(null, left_child, right_child);
-        }
-    }
-
-    public void decompress(File file) throws IOException {
-        read_from_compressed_file(file);
     }
 }
