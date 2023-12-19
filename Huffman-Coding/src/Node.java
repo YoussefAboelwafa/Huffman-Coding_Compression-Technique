@@ -10,9 +10,6 @@ public class Node {
     Node left;
     Node right;
 
-    public Node() {
-    }
-
     public Node(Wrapper value, Node left, Node right) {
         this.value = value;
         this.left = left;
