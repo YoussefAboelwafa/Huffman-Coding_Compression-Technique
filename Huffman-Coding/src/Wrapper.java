@@ -1,9 +1,9 @@
 import java.util.Arrays;
 
-public final class BAW {
+public final class Wrapper {
     public final byte[] data;
 
-    public BAW(byte[] data) {
+    public Wrapper(byte[] data) {
         if (data == null) {
             throw new NullPointerException();
         }
@@ -12,10 +12,10 @@ public final class BAW {
 
     @Override
     public boolean equals(Object other) {
-        if (!(other instanceof BAW)) {
+        if (!(other instanceof Wrapper)) {
             return false;
         }
-        return Arrays.equals(data, ((BAW) other).data);
+        return Arrays.equals(data, ((Wrapper) other).data);
     }
 
     @Override
