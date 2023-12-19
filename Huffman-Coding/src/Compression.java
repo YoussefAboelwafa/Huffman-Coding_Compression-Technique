@@ -7,13 +7,16 @@ import java.util.*;
 
 public class Compression {
     @Getter
-    private Map<String, BitSet> huffman_codes = new HashMap<>();
+    private Map<String, boolean[]> huffman_codes = new HashMap<>();
     private final Map<String, Integer> frequencies = new HashMap<>();
     private final PriorityQueue<Node> queue = new PriorityQueue<>();
     private final int bytes;
+    private long original_size = 0;
+    File outputFile;
 
     public Compression(File file, int bytes, int chunk_size) throws IOException {
         this.bytes = bytes;
+        this.original_size = file.length();
         try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file))) {
             byte[] chunk = new byte[chunk_size];
             int bytes_read;
@@ -23,12 +26,7 @@ public class Compression {
         }
         fill_queue();
         build_tree();
-        generate_codes(queue.peek(), new BitSet());
-
-        System.out.println("Compression Codes:");
-        for (Map.Entry<String, BitSet> entry : huffman_codes.entrySet()) {
-            System.out.println(entry.getKey() + " => " + entry.getValue());
-        }
+        generate_codes(queue.peek(), new boolean[0], 0);
         encode(file);
     }
 
@@ -59,38 +57,40 @@ public class Compression {
         }
     }
 
-    private void generate_codes(Node node, BitSet code) {
-        if (node instanceof Leaf leaf) {
-            huffman_codes.put(leaf.getString(), (BitSet) code.clone());
-        } else {
-            BitSet leftCode = (BitSet) code.clone();
-            leftCode.set(code.length(), false);
-            generate_codes(node.getLeftNode(), leftCode);
+    private void generate_codes(Node node, boolean[] code, int length) {
+        boolean[] currentCode = Arrays.copyOf(code, length);
 
-            BitSet rightCode = (BitSet) code.clone();
-            rightCode.set(code.length(), true);
-            generate_codes(node.getRightNode(), rightCode);
+        if (node instanceof Leaf leaf) {
+            huffman_codes.put(leaf.getString(), currentCode);
+        } else {
+            boolean[] leftCode = Arrays.copyOf(currentCode, length + 1);
+            leftCode[length] = false;
+            generate_codes(node.getLeftNode(), leftCode, length + 1);
+
+            boolean[] rightCode = Arrays.copyOf(currentCode, length + 1);
+            rightCode[length] = true;
+            generate_codes(node.getRightNode(), rightCode, length + 1);
         }
     }
 
+
     private void encode(File inputFile) throws IOException {
         String outputFileName = "20012263." + bytes + "." + inputFile.getName() + ".hc";
-        File outputFile = new File(inputFile.getParent(), outputFileName);
+        outputFile = new File(inputFile.getParent(), outputFileName);
 
         try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(inputFile));
              FileOutputStream fos = new FileOutputStream(outputFile);
              ObjectOutputStream oos = new ObjectOutputStream(fos)) {
-            // Write the Huffman codes to the file
-            oos.writeObject(huffman_codes);
 
+            oos.writeObject(huffman_codes);
             byte[] chunk = new byte[bytes];
             int bytesRead;
             while ((bytesRead = bis.read(chunk)) != -1) {
                 if (bytesRead == bytes) {
                     String key = new String(chunk);
-                    BitSet huffmanCode = huffman_codes.get(key);
+                    boolean[] huffmanCode = huffman_codes.get(key);
                     if (huffmanCode != null) {
-                        byte[] encodedChunk = huffmanCode.toByteArray();
+                        byte[] encodedChunk = new byte[(huffmanCode.length + 7) / 8];
                         fos.write(encodedChunk);
                     } else {
                         throw new IOException("No Huffman code for input chunk: " + key);
@@ -102,11 +102,11 @@ public class Compression {
 
 
     public long get_compressed_size() {
-        return 0;
+        return outputFile.length();
     }
 
     public double get_compression_ratio() {
-        return 0;
+        return (double) get_compressed_size() / original_size;
     }
 
 }

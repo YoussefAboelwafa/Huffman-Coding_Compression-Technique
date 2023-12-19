@@ -3,16 +3,15 @@ import java.io.*;
 
 public class Solution {
     public void compress(File file, int bytes, int chunk_size) throws IOException {
-        System.out.println("Original Size: \u001B[33m" + file.length() + " \u001B[0mbytes");
         try {
-
             long start = System.currentTimeMillis();
             Compression compression = new Compression(file, bytes, chunk_size);
             long end = System.currentTimeMillis();
 
             System.out.println("Time: \u001B[35m" + (end - start) / 1000 + " \u001B[0ms");
+            System.out.println("Original Size: \u001B[33m" + file.length() + " \u001B[0mbytes");
             System.out.println("Compressed Size: \u001B[32m" + compression.get_compressed_size() + " \u001B[0mbytes");
-            System.out.println("Compression Ratio: \u001B[34m" + compression.get_compression_ratio() + "\u001B[0m");
+            System.out.println("Compression Ratio: \u001B[34m" + compression.get_compression_ratio() * 100 + "\u001B[0m");
 
         } catch (IOException e) {
             System.out.println("\u001B[31mError reading file\u001B[0m");
