@@ -9,6 +9,7 @@ public class Decompression {
     Node temp_root;
     Node root;
 
+    // Main method for decompressing a file
     public void decompress(File file) throws IOException {
         try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file))) {
             int n = Integer.parseInt(read_until_comma(bis));
@@ -30,6 +31,7 @@ public class Decompression {
         }
     }
 
+    // Read until comma
     private String read_until_comma(BufferedInputStream bis) throws IOException {
         StringBuilder sb = new StringBuilder();
         byte[] temp = new byte[1];
@@ -43,12 +45,14 @@ public class Decompression {
         return sb.toString();
     }
 
+    // Read bytes
     private String read_bytes(BufferedInputStream bis, int size) throws IOException {
         byte[] temp = new byte[size];
         bis.read(temp);
         return new String(temp, StandardCharsets.ISO_8859_1);
     }
 
+    // Reconstruct huffman tree
     private Node reconstruct_huffman_tree(StringBuilder dictionary, int n, int index, int size) {
         if (dictionary.charAt(dictionary_index) == '1') {
             number_ones++;
@@ -69,6 +73,7 @@ public class Decompression {
         }
     }
 
+    // Decompress body
     public void decompress_body(BufferedInputStream bis, File file) throws IOException {
         String b = "extracted." + file.getName().replace(".hc", "");
         FileOutputStream fos = new FileOutputStream(file.getAbsolutePath().replace(file.getName(), b));
@@ -108,6 +113,7 @@ public class Decompression {
         bos.close();
     }
 
+    // Helper method that writes the decompressed file
     private void helper(BufferedOutputStream bos, StringBuilder bits_string) throws IOException {
         if (this.temp_root == null) {
             throw new RuntimeException("Temporary root of the tree is null");
