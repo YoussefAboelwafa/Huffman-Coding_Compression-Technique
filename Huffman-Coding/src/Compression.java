@@ -145,7 +145,6 @@ public class Compression {
     // Write compressed file
     private void write_file(File file, BufferedOutputStream bos, int n, HashMap<Wrapper, String> huffman_codes) throws IOException {
         FileInputStream fis = new FileInputStream(file);
-        // Write 4MB at a time
         BufferedInputStream bis = new BufferedInputStream(fis, OUTPUT_BUFFER_SIZE);
         byte[] data = new byte[n];
         int bytes_read;
