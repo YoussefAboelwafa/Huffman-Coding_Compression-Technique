@@ -70,6 +70,7 @@ public class Solution {
     // Main method for compressing a file
     public void compress(File file, int bytes) throws IOException {
         try {
+            System.out.println("Compressing File....");
             long start = System.currentTimeMillis();
             Compression compression = new Compression();
             compression.compress(file, bytes);
@@ -80,7 +81,6 @@ public class Solution {
             System.out.println("Original Size: \u001B[33m" + file.length() + " \u001B[0mbytes");
             System.out.println("Compressed Size: \u001B[32m" + compression.get_compressed_size() + " \u001B[0mbytes");
             System.out.println("Compression Ratio: \u001B[36m" + Math.round(compression.get_compression_ratio()) + " \u001B[0m%");
-            System.out.println("====================================================================");
 
         } catch (IOException e) {
             System.out.println("\u001B[31mError reading file\u001B[0m");
@@ -91,6 +91,7 @@ public class Solution {
     // Main method for decompressing a file
     public void decompress(File file) {
         try {
+            System.out.println("Decompressing File....");
             long start = System.currentTimeMillis();
             Decompression decompression = new Decompression();
             decompression.decompress(file);

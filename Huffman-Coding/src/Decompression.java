@@ -9,64 +9,46 @@ public class Decompression {
     Node root;
 
     public void decompress(File file) throws IOException {
-        FileInputStream fis = new FileInputStream(file);
-        BufferedInputStream bis = new BufferedInputStream(fis);
+        try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file))) {
+            int n = Integer.parseInt(read_until_comma(bis));
+            int index = Integer.parseInt(read_until_comma(bis));
+            int size = Integer.parseInt(read_until_comma(bis));
+            int size_of_dictionary = Integer.parseInt(read_until_comma(bis));
 
-        StringBuilder number_bytes = new StringBuilder();
-        StringBuilder dictionary_size = new StringBuilder();
-        StringBuilder index_string = new StringBuilder();
-        StringBuilder size_string = new StringBuilder();
-        StringBuilder dictionary = new StringBuilder();
+            String dictionary_string = read_bytes(bis, size_of_dictionary);
+            StringBuilder dictionary = new StringBuilder(dictionary_string);
 
-        String string_to_read;
-        byte[] temp = new byte[1];
-        int bytesRead = 0;
-        while ((bytesRead = bis.read(temp)) != -1) {
-            string_to_read = new String(temp, StandardCharsets.ISO_8859_1);
-            if (string_to_read.equals(","))
-                break;
-            number_bytes.append(string_to_read);
+            this.root = reconstruct_huffman_tree(dictionary, n, index, size);
+
+            if (this.root.left == null && this.root.right == null) {
+                this.check = true;
+            }
+            this.temp_root = this.root;
+
+            decompress_body(bis, file);
         }
-        while ((bytesRead = bis.read(temp)) != -1) {
-            string_to_read = new String(temp, StandardCharsets.ISO_8859_1);
-            if (string_to_read.equals(","))
-                break;
-            index_string.append(string_to_read);
-        }
-        while ((bytesRead = bis.read(temp)) != -1) {
-            string_to_read = new String(temp, StandardCharsets.ISO_8859_1);
-            if (string_to_read.equals(","))
-                break;
-            size_string.append(string_to_read);
-        }
-        while ((bytesRead = bis.read(temp)) != -1) {
-            string_to_read = new String(temp, StandardCharsets.ISO_8859_1);
-            if (string_to_read.equals(","))
-                break;
-            dictionary_size.append(string_to_read);
-        }
-        int n = Integer.parseInt(number_bytes.toString());
-        int index = Integer.parseInt(index_string.toString());
-        int size = Integer.parseInt(size_string.toString());
-        int size_of_dictionary = Integer.parseInt(dictionary_size.toString());
-
-        temp = new byte[size_of_dictionary];
-        bis.read(temp);
-        string_to_read = new String(temp, StandardCharsets.ISO_8859_1);
-        dictionary.append(string_to_read);
-
-
-        this.root = reconstruct_tree(dictionary, n, index, size);
-
-        if (this.root.left == null && this.root.right == null) {
-            this.check = true;
-        }
-        this.temp_root = this.root;
-
-        decompress_body(bis, n, file);
     }
 
-    private Node reconstruct_tree(StringBuilder dictionary, int n, int index, int size) {
+    private String read_until_comma(BufferedInputStream bis) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        byte[] temp = new byte[1];
+        String string_to_read;
+        while (bis.read(temp) != -1) {
+            string_to_read = new String(temp, StandardCharsets.ISO_8859_1);
+            if (string_to_read.equals(","))
+                break;
+            sb.append(string_to_read);
+        }
+        return sb.toString();
+    }
+
+    private String read_bytes(BufferedInputStream bis, int size) throws IOException {
+        byte[] temp = new byte[size];
+        bis.read(temp);
+        return new String(temp, StandardCharsets.ISO_8859_1);
+    }
+
+    private Node reconstruct_huffman_tree(StringBuilder dictionary, int n, int index, int size) {
         if (dictionary.charAt(dictionary_index) == '1') {
             number_ones++;
             byte[] bytes;
@@ -80,44 +62,43 @@ public class Decompression {
             return new Node(new Wrapper(bytes.clone()), null, null);
         } else {
             dictionary_index++;
-            Node left_child = reconstruct_tree(dictionary, n, index, size);
-            Node right_child = reconstruct_tree(dictionary, n, index, size);
+            Node left_child = reconstruct_huffman_tree(dictionary, n, index, size);
+            Node right_child = reconstruct_huffman_tree(dictionary, n, index, size);
             return new Node(null, left_child, right_child);
         }
     }
 
-    public void decompress_body(BufferedInputStream bis, int n, File file) throws IOException {
+    public void decompress_body(BufferedInputStream bis, File file) throws IOException {
         String b = "extracted." + file.getName().replace(".hc", "");
         FileOutputStream fos = new FileOutputStream(file.getAbsolutePath().replace(file.getName(), b));
         BufferedOutputStream bos = new BufferedOutputStream(fos);
         byte[] buffer = new byte[32000];
-        StringBuilder stringOfBits = new StringBuilder();
-        int bytesRead = 0;
-        int shift = 0;
-        while ((bytesRead = bis.read(buffer)) != -1) {
+        StringBuilder string_of_bits = new StringBuilder();
+        int bytes_read;
+        int shift;
+        while ((bytes_read = bis.read(buffer)) != -1) {
 
-            if (bytesRead < 32000) {
-                byte[] temp = new byte[bytesRead];
-                System.arraycopy(buffer, 0, temp, 0, bytesRead);
-                for (int i = 0; i < temp.length; i++)
-                    stringOfBits.append(String.format("%8s", Integer.toBinaryString(temp[i] & 0xFF)).replace(' ', '0'));
+            if (bytes_read < 32000) {
+                byte[] temp = new byte[bytes_read];
+                System.arraycopy(buffer, 0, temp, 0, bytes_read);
+                for (byte value : temp)
+                    string_of_bits.append(String.format("%8s", Integer.toBinaryString(value & 0xFF)).replace(' ', '0'));
             } else {
-                for (int i = 0; i < buffer.length; i++)
-                    stringOfBits.append(String.format("%8s", Integer.toBinaryString(buffer[i] & 0xFF)).replace(' ', '0'));
+                for (byte value : buffer)
+                    string_of_bits.append(String.format("%8s", Integer.toBinaryString(value & 0xFF)).replace(' ', '0'));
             }
             if (bis.available() == 1) {
-                byte[] ZerosByte = new byte[1];
-                bis.read(ZerosByte);
+                byte[] zeros_byte = new byte[1];
+                bis.read(zeros_byte);
                 String st = String.format("%8s", Integer.toBinaryString(buffer[0] & 0xFF)).replace(' ', '0');
                 shift = Integer.parseInt(st, 2);
-                stringOfBits = new StringBuilder(stringOfBits.substring(0, stringOfBits.length() - shift));
+                string_of_bits = new StringBuilder(string_of_bits.substring(0, string_of_bits.length() - shift));
             } else if (bis.available() == 0) {
-                StringBuilder ZerosByte = new StringBuilder(stringOfBits.substring(stringOfBits.length() - 8, stringOfBits.length()));
-                shift = Integer.parseInt(ZerosByte.toString(), 2);
-                stringOfBits = new StringBuilder(stringOfBits.substring(0, stringOfBits.length() - shift - 8));
+                shift = Integer.parseInt(string_of_bits.substring(string_of_bits.length() - 8, string_of_bits.length()), 2);
+                string_of_bits = new StringBuilder(string_of_bits.substring(0, string_of_bits.length() - shift - 8));
             }
-            helper(bos, stringOfBits);
-            stringOfBits = new StringBuilder();
+            helper(bos, string_of_bits);
+            string_of_bits = new StringBuilder();
             buffer = new byte[32000];
 
         }
@@ -126,18 +107,18 @@ public class Decompression {
         bos.close();
     }
 
-    private void helper(BufferedOutputStream bufferedOutputStream, StringBuilder stringOfBits) throws IOException {
+    private void helper(BufferedOutputStream bos, StringBuilder bits_string) throws IOException {
         if (this.temp_root == null) {
             throw new RuntimeException("Temporary root of the tree is null");
         }
-        for (int i = 0; i < stringOfBits.length(); i++) {
-            if (stringOfBits.charAt(i) == '0' && !this.check) {
+        for (int i = 0; i < bits_string.length(); i++) {
+            if (bits_string.charAt(i) == '0' && !this.check) {
                 if (this.temp_root.left != null) {
                     this.temp_root = this.temp_root.left;
                 } else {
                     throw new RuntimeException("Left node is null");
                 }
-            } else if (stringOfBits.charAt(i) == '1') {
+            } else if (bits_string.charAt(i) == '1') {
                 if (this.temp_root.right != null) {
                     this.temp_root = this.temp_root.right;
                 } else {
@@ -145,7 +126,7 @@ public class Decompression {
                 }
             }
             if (this.temp_root.left == null && this.temp_root.right == null) {
-                bufferedOutputStream.write(this.temp_root.value.data);
+                bos.write(this.temp_root.value.data);
                 this.temp_root = this.root;
             }
         }
