@@ -2,6 +2,7 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 
 public class Decompression {
+    private static final int BUFFER_SIZE = 32000;
     int number_ones = 0;
     int dictionary_index = 0;
     boolean check = false;
@@ -72,13 +73,13 @@ public class Decompression {
         String b = "extracted." + file.getName().replace(".hc", "");
         FileOutputStream fos = new FileOutputStream(file.getAbsolutePath().replace(file.getName(), b));
         BufferedOutputStream bos = new BufferedOutputStream(fos);
-        byte[] buffer = new byte[32000];
+        byte[] buffer = new byte[BUFFER_SIZE];
         StringBuilder string_of_bits = new StringBuilder();
         int bytes_read;
         int shift;
         while ((bytes_read = bis.read(buffer)) != -1) {
 
-            if (bytes_read < 32000) {
+            if (bytes_read < BUFFER_SIZE) {
                 byte[] temp = new byte[bytes_read];
                 System.arraycopy(buffer, 0, temp, 0, bytes_read);
                 for (byte value : temp)
@@ -99,7 +100,7 @@ public class Decompression {
             }
             helper(bos, string_of_bits);
             string_of_bits = new StringBuilder();
-            buffer = new byte[32000];
+            buffer = new byte[BUFFER_SIZE];
 
         }
 

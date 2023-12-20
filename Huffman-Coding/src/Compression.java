@@ -6,6 +6,8 @@ import java.util.PriorityQueue;
 import java.util.Stack;
 
 public class Compression {
+    private static final int INPUT_BUFFER_SIZE = 1024 * 1024;
+    private static final int OUTPUT_BUFFER_SIZE = 1024 * 64;
     private int index;
     private int size;
     private int number_ones = 0;
@@ -42,8 +44,7 @@ public class Compression {
     private HashMap<Wrapper, Long> build_frequencies(File file, int n) throws IOException {
         HashMap<Wrapper, Long> frequencies = new HashMap<>();
         byte[] data = new byte[n * 1024];
-        // Read 10MB at a time
-        try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file), 1024 * 1024 * 10)) {
+        try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file), INPUT_BUFFER_SIZE)) {
             int bytes_read;
             while ((bytes_read = bis.read(data)) != -1) {
                 for (int i = 0; i < bytes_read; i += n) {
@@ -145,7 +146,7 @@ public class Compression {
     private void write_file(File file, BufferedOutputStream bos, int n, HashMap<Wrapper, String> huffman_codes) throws IOException {
         FileInputStream fis = new FileInputStream(file);
         // Write 4MB at a time
-        BufferedInputStream bis = new BufferedInputStream(fis, 1024 * 1024 * 4);
+        BufferedInputStream bis = new BufferedInputStream(fis, OUTPUT_BUFFER_SIZE);
         byte[] data = new byte[n];
         int bytes_read;
         StringBuilder sb = new StringBuilder();
