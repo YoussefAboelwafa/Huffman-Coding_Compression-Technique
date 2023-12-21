@@ -74,7 +74,7 @@ public class Decompression {
     }
 
     // Decompress body
-    public void decompress_body(BufferedInputStream bis, File file) throws IOException {
+    private void decompress_body(BufferedInputStream bis, File file) throws IOException {
         String b = "extracted." + file.getName().replace(".hc", "");
         FileOutputStream fos = new FileOutputStream(file.getAbsolutePath().replace(file.getName(), b));
         BufferedOutputStream bos = new BufferedOutputStream(fos);
